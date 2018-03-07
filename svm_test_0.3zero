@@ -1,0 +1,17 @@
+[[1083   22    6   19   11   18    0    8]
+ [  26   25    8    1    2    4    0    0]
+ [  19    7   35    0    3    2    0    0]
+ [  22    0    0   38    1    0    0    4]
+ [  21    5    0    0    6    1    0    0]
+ [  16    2    3    0    3   19    0    0]
+ [  10    2   12    0    1    3    2    0]
+ [  10    0    0    4    0    0    0   10]]
+accuracy:0.184738955823
+0 recall:0.928020565553 precision:0.897265948633 specificity:0.768224299065
+1 recall:0.378787878788 precision:0.396825396825 specificity:0.974784339748
+2 recall:0.530303030303 precision:0.546875 specificity:0.980510752688
+3 recall:0.584615384615 precision:0.612903225806 specificity:0.983783783784
+4 recall:0.181818181818 precision:0.222222222222 specificity:0.986083499006
+5 recall:0.441860465116 precision:0.404255319149 specificity:0.981370592149
+6 recall:0.0666666666667 precision:1.0 specificity:1.0
+7 recall:0.416666666667 precision:0.454545454545 specificity:0.991978609626

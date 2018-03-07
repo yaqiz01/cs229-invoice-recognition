@@ -1,0 +1,29 @@
+#!/usr/bin/python2.7
+
+from os import listdir
+from os.path import isfile, join, splitext
+import os
+from shutil import copyfile
+import argparse
+
+def main():
+    usage = "Usage: rmfiles [fileName1 fileName2 ... fileNameN]"
+    parser = argparse.ArgumentParser(description='remove file with fileName')
+    (opts, args) = parser.parse_known_args()
+
+    data_path = 'data/'
+    training_img_path = '{0}Training_Image_pdf/'.format(data_path)
+    training_img_png_path = '{0}Training_Image_png/'.format(data_path)
+    training_img_ocr_path = '{0}Training_Image_ocr/'.format(data_path)
+    training_img_xml_path = '{0}Training_Image_xml/'.format(data_path)
+
+    for fileName in args:
+        command = 'rm {0}{1}.pdf'.format(training_img_ocr_path, fileName)
+        print(command)
+        os.system(command)
+        command = 'rm {0}{1}.xml'.format(training_img_xml_path, fileName)
+        print(command)
+        os.system(command)
+
+if __name__ == "__main__":
+    main()

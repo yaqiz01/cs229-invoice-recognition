@@ -1,0 +1,51 @@
+This is BibTeX, Version 0.99d (TeX Live 2016/MacPorts 2016_1)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: report.aux
+The style file: ieeetr.bst
+Database file #1: references.bib
+Warning--empty journal in sorio2013machine
+Warning--empty journal in smith2007overview
+Warning--empty year in loper205028nltk
+Warning--empty journal in powers2011evaluation
+You've used 16 entries,
+            1876 wiz_defined-function locations,
+            566 strings with 6094 characters,
+and the built_in function-call counts, 4129 in all, are:
+= -- 391
+> -- 166
+< -- 0
++ -- 63
+- -- 47
+* -- 288
+:= -- 588
+add.period$ -- 17
+call.type$ -- 16
+change.case$ -- 16
+chr.to.int$ -- 0
+cite$ -- 20
+duplicate$ -- 208
+empty$ -- 411
+format.name$ -- 47
+if$ -- 998
+int.to.chr$ -- 0
+int.to.str$ -- 16
+missing$ -- 13
+newline$ -- 52
+num.names$ -- 16
+pop$ -- 72
+preamble$ -- 1
+purify$ -- 0
+quote$ -- 0
+skip$ -- 140
+stack$ -- 0
+substring$ -- 255
+swap$ -- 76
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 0
+warning$ -- 4
+while$ -- 41
+width$ -- 18
+write$ -- 149
+(There were 4 warnings)

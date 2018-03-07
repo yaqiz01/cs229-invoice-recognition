@@ -1,0 +1,614 @@
+#!/usr/bin/python2.7
+
+from os import listdir
+from os.path import isfile, join, splitext
+import os
+import argparse
+import csv
+import subprocess
+import commands
+import features as ftr 
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
+from model import *
+from util import *
+from scipy.stats import entropy
+import pickle
+
+data_path = 'data/'
+exp_path = 'experiments/'
+training_img_xml_path = '{0}Training_Image_xml/'.format(data_path)
+training_input_path = '{0}Training_Input/'.format(exp_path) 
+MATLAB_PATH = '/Applications/MATLAB_R2016b.app/bin/matlab -nodesktop -nosplash'
+
+algos = ['nb', 'logreg', 'svm']
+selfTpes = ['wst', 'wost']
+algocm = { 'nb':'r', 'logreg':'b', 'svm':'g' }
+modedict = {'TRAINING_ERR': 'Training f1 score', 'TESTING_ERR':'Simple Cross Validation',
+'K-FOLD':'k-fold'}
+algodict = {'svm':'SVM', 'logreg':'Logistic Regression', 'nb':'Naive Bayes'}
+# Sweep nearby range experiments
+def runNBRange(**opts):
+    terrs = {}
+    numFeatures = []
+    nbranges = np.linspace(5, 100, 11)
+    classes = sorted(ftr.itemReverseMap.keys())
+    for algo in algos: 
+        terrs[algo] = {} 
+        for selfTpe in selfTpes:
+            terrs[algo][selfTpe] = {}
+            for cl in classes:
+                terrs[algo][selfTpe][cl] = []
+
+    resultFile = '{0}nbrange.txt'.format(exp_path)
+    command = '{0} -r "'.format(MATLAB_PATH)
+    command += 'MODE=\'{0}\'; '.format(opts['mode'])
+    command += 'addpath(\'bin/\'); '
+    for selfTpe in selfTpes:
+        fToggle = { 'vAlign':True, 'hAlign':True, 'nearby':True, 'pos':True, 'selfType':selfTpe=='wst' }
+        for nbrange in nbranges: 
+            inputFile = 'training_input_{0}_nb{1}.csv'.format(selfTpe, nbrange)
+            if not isfile('{0}{1}'.format(training_input_path, inputFile)):
+                print('Gather {0} zeropct:{1}'.format(inputFile, opts['zeropct']))
+                tic()
+                ftr.gather(nbrange, inputFile, fToggle, zeropct=opts['zeropct'])
+                toc()
+            for algo in algos:
+                if opts['model'] == 'python':
+                    # run python model
+                    print(selfTpe, nbrange, algo)
+                    X,y,textboxs, headers = loadData(inputFile)
+                    opts['algo'] = algo
+                    metric = test(X,y,**opts)
+                    classes = sorted(list(set(y)))
+                    for cl in classes:
+                        p = metric['precision'][cl]
+                        r = metric['recall'][cl]
+                        if (p+r)==0:
+                            f1 = 0
+                        else:
+                            f1 = 2*(p*r)/(p+r)
+                        terrs[algo][selfTpe][cl].append(f1)
+                    numFeatures.append(X[0].size)
+                    numData = y.size
+                elif opts['model'] == 'matlab':
+                    command += 'INPUT_PATH=\'{0}{1}\';'.format(training_input_path, inputFile)
+                    command += 'model;'
+
+    # run matlab model
+    command += 'exit" > {0}'.format(resultFile)
+    if opts['model']=='matlab' and opts['matlab']:
+        print(command)
+        os.system(command)
+    elif opts['model']=='python':
+        pickle.dump(terrs, open('{0}/{1}.p'.format(training_input_path, "terrs_nearby"), "wb" ))
+        pickle.dump(numFeatures, open('{0}/{1}.p'.format(training_input_path, "numFeatures_nearby"), "wb" ))
+        pickle.dump(nbranges, open('{0}/{1}.p'.format(training_input_path, "nbrange_nearby"), "wb" ))
+        pickle.dump(numData, open('{0}/{1}.p'.format(training_input_path, "numData_nearby"), "wb" ))
+
+def plotNBRange(**opts):
+    # Load matlab result
+    if opts['model'] == 'matlab':
+        f = open(resultFile, 'r')
+        for line in f:
+            if ('Test error' in line):
+                if ('wst' in line):
+                    terrs['wst'].append(float(line.split(': ')[1]))
+                elif ('wost' in line):
+                    terrs['wost'].append(float(line.split(': ')[1]))
+                numFeatures.append(int(line.split('n=')[1].split(', ')[0]))
+                numData = int(line.split('m=')[1].split(', ')[0])
+    elif opts['model'] == 'python':
+        terrs = pickle.load(open('{0}/{1}.p'.format(training_input_path, "terrs_nearby"), "rb" ))
+        numFeatures = pickle.load(open('{0}/{1}.p'.format(training_input_path, "numFeatures_nearby"), "rb" ))
+        nbranges = pickle.load(open('{0}/{1}.p'.format(training_input_path, "nbrange_nearby"), "rb" ))
+        numData = pickle.load(open('{0}/{1}.p'.format(training_input_path, "numData_nearby"), "rb" ))
+
+    # plot result
+    lineTpe = { 'wst':'--', 'wost':'-.' }
+    labels = { 'wst': 'with self-type', 'wost':'without self-type' }
+    classes = sorted(ftr.itemReverseMap.keys())
+    for algo in algos:
+        for selfTpe in ['wst']:
+            plt.clf()
+            for cl in classes:
+                plt.plot(nbranges, terrs[algo][selfTpe][cl], label=ftr.itemReverseMap[cl])
+            plt.legend(loc=1, ncol=3, fontsize=10)
+            ax = plt.gca()
+            ax.set_ylim([0, 2])
+            ax.set_xlim([min(nbranges), max(nbranges)])
+            ax.set_title('Nearby Searching Range vs. Training and Testing Error\n(m={0}, n=[{1}~{2}])'.format(numData,
+                min(numFeatures), max(numFeatures)), fontsize=12)
+            ax.set_xlabel('Nearby Searching Range (% of Page Width)')
+            ax.set_ylabel('Training Error %')
+            fig = plt.gcf()
+            fig.set_size_inches(6,3.5)
+            plt.tight_layout()
+
+            fileName = '{0}graph/nbrange_{1}_{2}_{3}.png'.format(exp_path, opts['mode'], algo, opts['model'])
+            print(fileName)
+            fig.savefig(fileName)
+    # plt.show()
+
+def runExcFeatures(**opts):
+    nbrange = 0.1
+    features = {True:[], False:[]}
+    terrs = {True:{}, False:{}}
+    numFeatures = []
+    algo = opts['algo']
+    include = 434
+
+    resultFile = '{0}incfeatures.txt'.format(exp_path)
+    command = '{0} -r "'.format(MATLAB_PATH)
+    command += 'MODE=\'{0}\'; '.format(opts['mode'])
+    command += 'addpath(\'bin/\'); '
+
+    incMode = [True, False]
+    short = {True:'inc', False:'exc'}
+    long = { True:'include', False:'exclude' }
+    for inc in incMode:
+        if (inc):
+            fToggle = { 'vAlign':False, 'hAlign':False, 'nearby':False, 'pos':False,
+                'selfType':False }
+        else:
+            fToggle = { 'vAlign':True, 'hAlign':True, 'nearby':True, 'pos':True, 'selfType':True }
+        for feature in fToggle:
+            if (inc):
+                fToggle[feature] = True 
+            else:
+                fToggle[feature] = False
+            inputFile = 'training_input_{0}ft_{1}.csv'.format(short[inc], feature)
+            if not isfile('{0}{1}'.format(training_input_path, inputFile)):
+                print('Gather {0}'.format(inputFile))
+                ftr.gather(nbrange, inputFile, fToggle, zeropct=opts['zeropct'])
+            if opts['model'] == 'python':
+                # run python model
+                X,y,textboxs, headers = loadData(inputFile)
+                score = getKL(X,y)
+                idx = np.argsort(score)[::-1]
+                top = idx[0:include]
+                Xp = X[:, top]
+                # Xp = X
+                metric = test(Xp,y,**opts)
+                features[inc].append(feature)
+                terrs[inc][feature] = metric 
+                numFeatures.append(Xp[0].size)
+                numData = y.size
+            elif opts['model'] == 'matlab':
+                command += 'INPUT_PATH=\'{0}{1}\';'.format(training_input_path, inputFile)
+                command += 'model;'
+            if (inc):
+                fToggle[feature] = False 
+            else:
+                fToggle[feature] = True 
+
+    # run matlab model
+    command += 'exit" > {0}'.format(resultFile)
+    if opts['model']=='matlab' and opts['matlab']:
+        print(command)
+        os.system(command)
+    elif opts['model']=='python':
+        pickle.dump(terrs, open('{0}/{1}.p'.format(training_input_path, "terrs_ft_{0}".format(algo)), "wb" ))
+        pickle.dump(features, open('{0}/{1}.p'.format(training_input_path, "features_ft_{0}".format(algo)), "wb" ))
+        pickle.dump(numFeatures, open('{0}/{1}.p'.format(training_input_path,
+            "numFeatures_ft_{0}".format(algo)), "wb" ))
+        pickle.dump(numData, open('{0}/{1}.p'.format(training_input_path,
+            "numData_ft_{0}".format(algo)), "wb" ))
+
+def plotExcFeatures(**opts):
+    markers = { 'vAlign':'o', 'hAlign':'s', 'nearby':'^', 'pos':'o', 'selfType':'*' }
+    color = { 'vAlign':'r', 'hAlign':'g', 'nearby':'b', 'pos':'y', 'selfType':'k' }
+    mfc = {False:{}, True:color}
+    mec = color
+    algo = opts['algo']
+    long = { True:'include', False:'exclude' }
+
+    for f in markers:
+        mfc[False][f] = 'w' 
+
+    # Load matlab result
+    if opts['model'] == 'matlab':
+        f = open(resultFile, 'r')
+        for line in f:
+            if ('Test error' in line):
+                inc = line.split('input_')[1].split('ft')[0]=='inc'
+                feature = line.split('{0}ft_'.format(short[inc]))[1].split('.csv')[0]
+                features[inc].append(feature)
+                terrs[inc][feature] = float(line.split(': ')[1])
+                numFeatures.append(int(line.split('n=')[1].split(', ')[0]))
+                numData = int(line.split('m=')[1].split(', ')[0])
+    elif opts['model'] == 'python':
+        terrs = pickle.load(open('{0}/{1}.p'.format(training_input_path, "terrs_ft_{0}".format(algo)), "rb" ))
+        features = pickle.load(open('{0}/{1}.p'.format(training_input_path, "features_ft_{0}".format(algo)), "rb" ))
+        numFeatures = pickle.load(open('{0}/{1}.p'.format(training_input_path,
+            "numFeatures_ft_{0}".format(algo)), "rb" ))
+        numData = pickle.load(open('{0}/{1}.p'.format(training_input_path, "numData_ft_{0}".format(algo)), "rb" ))
+
+    # plot result
+    plt.clf()
+    for inc in features:
+        xticks = []
+        for i, feature in enumerate(features[inc]):
+            xticks.append(i+0.5)
+            if (feature=='vAlign'):
+                plt.plot(i+0.5, terrs[inc][feature]['f1-wavg'], markers[feature], 
+                        label='{0} feature'.format(long[inc]), markerfacecolor=mfc[inc][feature],
+                        markeredgecolor=mec[feature], markeredgewidth=1.5, markersize=8)
+            else:
+                plt.plot(i+0.5, terrs[inc][feature]['f1-wavg'], markers[feature], markerfacecolor=mfc[inc][feature],
+                        markeredgecolor=mec[feature], markeredgewidth=1.5, markersize=8)
+    plt.legend(loc=1, ncol=2, fontsize=10)
+    ax = plt.gca()
+    ax.set_ylim([0, 1.2])
+    ax.set_xlim([0, 5])
+    # ax.set_title('Feature Effectiveness\n(m={0}, n=[{1}~{2}])'.format(numData,
+        # min(numFeatures), max(numFeatures)), fontsize=12)
+    ax.set_xlabel('Included/Excluded Features')
+    ax.set_xticklabels(features[True])
+    ax.set_xticks(xticks)
+    ax.set_ylabel('Weighted Average F1')
+    ax.grid(True)
+    fig = plt.gcf()
+    fig.set_size_inches(4.5,3.5)
+    plt.tight_layout()
+    figName = '{0}/graph/incfeatures_{1}_{2}_{3}.png'.format(exp_path, opts['mode'], opts['algo'],
+        opts['model'])
+    print(figName)
+    fig.savefig(figName)
+    # plt.show()
+
+def runFeatureSelect(**opts):
+    nbrange = 0.1
+    mode = opts['mode']
+    zeropct = opts['zeropct']
+    inputFile = 'training_input_featureselect_{0}_zp{1}.csv'.format(nbrange, zeropct)
+    fToggle = { 'vAlign':True, 'hAlign':True, 'nearby':True, 'pos':True, 'selfType':True }
+    if not isfile('{0}{1}'.format(training_input_path, inputFile)):
+        print('Gather {0}'.format(inputFile))
+        ftr.gather(nbrange, inputFile, fToggle, zeropct=opts['zeropct'])
+    X,y,textboxs, headers = loadData(inputFile)
+    m,n = X.shape
+    score = getKL(X,y)
+    score = np.argsort(score)[::-1]
+    # incrange = np.round(np.linspace(1, 100, 10)).astype(np.int32)
+    incrange = np.round(np.logspace(0, np.floor(np.log(n)/np.log(10)), 150)).astype(np.int32)
+    terrs = {}
+    classes = sorted(list(set(y)))
+    for algo in algos:
+        terrs[algo] = {}
+        for inc in incrange:
+            top = score[0:inc]
+            Xp = X[:, top]
+            metric = test(Xp,y,algo=algo, mode=mode, C=opts['C'], k=opts['k'], penalty=opts['penalty'])
+            terrs[algo][inc] = metric
+    pickle.dump(terrs, open('{0}/{1}_{2}.p'.format(training_input_path, "terrs_fs", mode), "wb" ))
+    pickle.dump(classes, open('{0}/{1}_{2}.p'.format(training_input_path, "classes_fs", mode), "wb" ))
+    pickle.dump(incrange, open('{0}/{1}_{2}.p'.format(training_input_path, "incrange_fs", mode), "wb" ))
+    
+def plotFeatureSelect(**opts):
+    mode = opts['mode']
+    zeropct = opts['zeropct']
+
+    terrs = pickle.load(open('{0}/{1}_{2}.p'.format(training_input_path, "terrs_fs", mode), "rb" ))
+    classes = pickle.load(open('{0}/{1}_{2}.p'.format(training_input_path, "classes_fs", mode), "rb" ))
+    incrange = pickle.load(open('{0}/{1}_{2}.p'.format(training_input_path, "incrange_fs",mode), "rb" ))
+    # for cl, color in zip(classes, ['r', 'y', 'b', 'g', 'k', 'c', 'm', '']):
+    for algo in algos:
+        plt.clf()
+
+        # weighted avg f1
+        avgf1s = []
+        accs = []
+        for inc in incrange:
+            metric = terrs[algo][inc]
+            avgf1s.append(metric['f1-wavg'])
+            accs.append(metric['accuracy'])
+        plt.semilogx(incrange, avgf1s, label='Weighted Avg F1', ls='--')
+        idx = np.argmax(avgf1s)
+        print('{2} Max averaged f1 occurs at {0} = {1}'.format(incrange[idx], avgf1s[idx], algo))
+        idx = np.argmin(accs)
+        print('{2} Min accuracy occurs at {0} = {1}'.format(incrange[idx], accs[idx], algo))
+
+        # Inidividual f1 curves
+        for cl in classes:
+            f1s = []
+            for inc in incrange: 
+                metric = terrs[algo][inc]
+                p = metric['precision'][cl]
+                r = metric['recall'][cl]
+                if (p+r)==0:
+                    f1 = 0
+                else:
+                    f1 = 2*(p*r)/(p+r) 
+                f1s.append(f1)
+            plt.semilogx(incrange, f1s, label=ftr.itemReverseMap[cl], ls='-')
+            # plt.plot(incrange, f1s, label=ftr.itemReverseMap[cl])
+
+        plt.legend(loc=1, ncol=3, fontsize=9)
+        ax = plt.gca()
+        ax.set_ylim([0, 1.5])
+        ax.set_xlim([min(incrange), max(incrange)])
+        if (opts['mode']=='K-FOLD'):
+            modestr = '{0} (k={1})'.format(modedict[opts['mode']], opts['k'])
+        else:
+            modestr = modedict[opts['mode']]
+        ax.set_title('Filter Feature Selection \nwith {0} on {1}'.format(modestr, algodict[algo]),
+                fontsize=12)
+        ax.set_xlabel('Number of Top Scored Features Included')
+        ax.set_ylabel('F1 score')
+        fig = plt.gcf()
+        fig.set_size_inches(6,3.5)
+        plt.tight_layout()
+        figName = '{0}graph/fetsel_{1}_{2}_zp{3}.png'.format(exp_path, opts['mode'], algo, zeropct)
+        print(figName)
+        fig.savefig(figName)
+
+
+def runModel(fileName, **opts):
+    X,y,textboxs, headers = loadData(fileName)
+    return computeMetric(X,y,**opts)
+
+def plotModel(**opts):
+    nbrange = 0.1
+    zeropct = opts['zeropct']
+    if zeropct==0:
+        inc = 197
+    elif zeropct==0.3:
+        inc = 434
+
+    inputFile = 'training_input_model_nb{0}_zp{1}.csv'.format(nbrange, zeropct)
+    fToggle = { 'vAlign':True, 'hAlign':True, 'nearby':True, 'pos':True, 'selfType':True }
+    if not isfile('{0}{1}'.format(training_input_path, inputFile)):
+        print('Gather {0}'.format(inputFile))
+        ftr.gather(nbrange, inputFile, fToggle, zeropct=zeropct)
+    X,y,textboxs, headers = loadData(inputFile)
+    score = getKL(X,y)
+    idx = np.argsort(score)[::-1]
+    top = idx[0:inc]
+    headers = np.array(headers)
+    print('Top {0} features'.format(inc), headers[top])
+    print('Top {0} features score'.format(inc), score[top])
+    Xp = X[:, top]
+
+    metric = {}
+    for algo in algos:
+        opts['algo'] = algo
+        metric[algo] = test(Xp,y,**opts)
+        printMetric(metric[algo])
+
+    classes = sorted(list(set(y)))
+    ind = np.arange(len(classes))
+    width = 0.25
+
+    for algo in algos:
+        plt.clf()
+
+        fig, ax = plt.subplots()
+
+        precision = [metric[algo]['precision'][cl]*100 for cl in classes]
+        rects1 = ax.bar(ind, precision, width, color='r')
+
+        recall = [metric[algo]['recall'][cl]*100 for cl in classes]
+        rects2 = ax.bar(ind + width, recall, width, color='y')
+
+        specificity = [metric[algo]['specificity'][cl]*100 for cl in classes]
+        rects3 = ax.bar(ind + 2*width, specificity, width, color='g')
+
+        ax.set_ylabel('Percentage (%)')
+        ax.set_ylim([0, 120])
+        ax.set_xlabel('Fields of Interest')
+        ax.set_title('Precision, Recall, and Specificity of \nIndividual Fields of Interest')
+        ax.set_xticks(ind + width * 1.5)
+        classNames = [ftr.itemReverseMap[cl] for cl in classes]
+        ax.set_xticklabels(classNames, rotation=30, fontsize=10, ha='right')
+        ax.legend((rects1[0], rects2[0], rects3[0]), ('Precision', 'Recall', 'Specificity'), ncol=3,
+                fontsize=10)
+        fig = plt.gcf()
+        fig.set_size_inches(6,3.5)
+        plt.tight_layout()
+
+        fig.savefig('{0}graph/model_{1}_zp{2}_inc{3}_{4}.png'.format(exp_path, algo, zeropct,
+            inc, opts['mode'])) 
+
+    plt.clf()
+    fig, ax = plt.subplots()
+    algomk = {'svm': 'o', 'logreg':'^', 'nb':'s'}
+    scale = 60
+    width = 0.2
+    lw = 2
+    for i, algo in enumerate(algos):
+        precision = [metric[algo]['precision'][cl]*100 for cl in classes]
+        point = ax.scatter(ind + i*width, precision, edgecolor='r', marker=algomk[algo], facecolor='none',
+                s=scale, linewidth=lw)
+
+        recall = [metric[algo]['recall'][cl]*100 for cl in classes]
+        point = ax.scatter(ind + i*width, recall, edgecolor='y', marker = algomk[algo],
+                facecolor='none', s=scale, linewidth=lw)
+
+        specificity = [metric[algo]['specificity'][cl]*100 for cl in classes]
+        point = ax.scatter(ind + i*width, specificity, edgecolor='g', marker = algomk[algo],
+                facecolor='none', s=scale, linewidth=lw)
+
+        ax.set_ylabel('Percentage (%)')
+        ax.set_ylim([0, 130])
+        ax.set_xlabel('Fields of Interest')
+        ax.set_title('Precision, Recall, and Specificity of \nIndividual Fields of Interest')
+        ax.set_xticks(ind + width * 1.5)
+        ax.grid(True)
+        classNames = [ftr.itemReverseMap[cl] for cl in classes]
+        ax.set_xticklabels(classNames, rotation=30, fontsize=10, ha='right')
+        fig.set_size_inches(8,5)
+        plt.tight_layout()
+
+    handles = [rects1[0], rects2[0], rects3[0]]
+    labels = ['Precision', 'Recall', 'Specificity']
+
+    for algo in algos:
+        handles.append(mlines.Line2D([], [], markerfacecolor='none', color='none', 
+            markeredgecolor='k', marker=algomk[algo], markeredgewidth=2))
+        labels.append(algo)
+    ax.legend(handles=handles, labels=labels, ncol=3,fontsize=10)
+
+    fig.savefig('{0}graph/model_all_zp{1}_inc{2}_{3}.png'.format(exp_path, zeropct, inc, opts['mode'])) 
+
+def loadData(fileName):
+    X = []
+    y = []
+    textboxs = []
+    with open('{0}{1}'.format(training_input_path, fileName), mode='r') as csvfile:
+        reader = csv.DictReader(csvfile)
+        headers = reader.fieldnames
+        for line in reader:
+            x = []
+            textboxs.append(line['textbox'])
+            for header in headers:
+                if header == 'textbox':
+                    continue
+                if header == 'item':
+                    y.append(int(line[header]))
+                else:
+                    x.append(int(line[header]))
+            X.append(x)
+    X = np.array(X)
+    y = np.array(y)
+    return (X,y, textboxs, headers)
+
+def getKL(X, y):
+    # p(y)
+    numYVals = max(y) + 1
+    py = np.zeros(numYVals)
+    for y_val in range(numYVals):
+        py[y_val] = float((y == y_val).sum()) / y.size
+    # p(xi) and joint probability
+    m = X.shape[0]
+    numFeatures = X.shape[1]
+    px = np.zeros((numFeatures, 2))
+    joint = np.zeros((numFeatures, 2, numYVals))
+    for xi in range(numFeatures):
+        xi_vals = X[:, xi]
+        px[xi, 0] = float((xi_vals == 0).sum()) / m
+        px[xi, 1] = 1 - px[xi, 0]
+        for y_val in range(numYVals):
+            joint[xi, 0, y_val] = float(np.logical_and(xi_vals == 0, y == y_val).sum()) / m
+            joint[xi, 1, y_val] = float(np.logical_and(xi_vals == 1, y == y_val).sum()) / m
+    kl = np.zeros(numFeatures)
+    for xi in range(numFeatures):
+        pk = joint[xi].flatten()
+        qk = np.outer(px[xi], py).flatten()
+        kl[xi] = entropy(pk, qk)
+    return kl
+
+def runAllModels(**opts):
+    nbrange = 0.1
+    inc = {'nb':9, 'svm':157, 'logreg':249}
+    for algo in algos:
+        for mode in ['TRAINING_ERR', 'K-FOLD']:
+            inputFile = 'training_input_model_nb{0}.csv'.format(nbrange)
+            fToggle = { 'vAlign':True, 'hAlign':True, 'nearby':True, 'pos':True, 'selfType':True }
+            if not isfile('{0}{1}'.format(training_input_path, inputFile)):
+                ftr.gather(nbrange, inputFile, fToggle, zeropct=opts['zeropct'])
+            X,y,textboxs, headers = loadData(inputFile)
+            score = getKL(X,y)
+            score = np.argsort(score)[::-1]
+            top = score[0:inc[algo]]
+            Xp = X[:, top]
+            opts['algo'] = algo
+            opts['mode'] = mode
+            metric = test(Xp,y,**opts)
+            print(algo, mode, metric['accuracy'])
+
+def findBestRegularicationError(**opts):
+    nbrange = 0.1
+    zeropct = opts['zeropct']
+    if zeropct==0:
+        inc = 197
+    elif zeropct==0.3:
+        inc = 434
+    fileName = 'training_input_model_nb{0}_zp{1}.csv'.format(nbrange, zeropct)
+    X,y,textboxs, headers = loadData(fileName)
+
+    # beginning of sweep
+    sampleSize= 100
+    bestTestError = 1
+    bestC = 0
+    c_sets = np.logspace(-4, 2, sampleSize) 
+    f1_sets = {}
+    penalty = ['l1', 'l2']
+
+    for algo in ['svm', 'logreg']:
+        opts['algo'] = algo
+        f1_sets[algo] = {}
+        for pen in penalty:
+            f1_sets[algo][pen] = []
+            for c in c_sets:
+                opts['C'] = c 
+                opts['penalty'] = pen
+                metric = test(X,y,**opts)
+                f1_sets[algo][pen].append(metric['f1-wavg'])
+
+    pickle.dump(c_sets, open('{0}/{1}.p'.format(training_input_path, "c_sets"), "wb" ))
+    pickle.dump(f1_sets, open('{0}/{1}.p'.format(training_input_path, "f1_sets"), "wb" ))
+
+
+def plotBestRegularicationError(**opts):
+    
+    c_sets = pickle.load(open('{0}/{1}.p'.format(training_input_path, "c_sets"), "rb" ))
+    f1_sets = pickle.load(open('{0}/{1}.p'.format(training_input_path, "f1_sets"), "rb" ))
+
+    penalty = ['l1', 'l2']
+
+    algocm = {'svm': 'm', 'logreg':'c'}
+    ls = {'l1':'--', 'l2':'-'}
+
+    fig, ax = plt.subplots()
+    for algo in ['logreg', 'svm']:
+        for pen in penalty:
+            idx = np.argmax(f1_sets[algo][pen])
+            bestF1 = f1_sets[algo][pen][idx] 
+            bestC = c_sets[idx]
+            print('best f1: {0} for {1} {2}'.format(bestF1, algo, pen))
+            print('best c: {0} for {1} {2}'.format(bestC, algo, pen))
+            plt.semilogx(c_sets, f1_sets[algo][pen], color=algocm[algo], ls=ls[pen], label=algo + '_' + pen,
+                    linewidth=2)
+    plt.axis([min(c_sets), max(c_sets), 0, 0.85])
+    plt.legend(loc=0, ncol=2, fontsize=12)
+    ax.set_xlabel('Penalty Parameter')
+    ax.set_ylabel('Weighted Average F1')
+    ax.grid(True)
+    fig.set_size_inches(4.5,3.5)
+    plt.tight_layout()
+    fileName = '{0}graph/reg_{1}.png'.format(exp_path, opts['mode'])
+    print(fileName)
+    fig.savefig(fileName)
+
+def main():
+    usage = "Usage: experiments [options]"
+    parser = argparse.ArgumentParser(description='Run feature experiments')
+    parser.add_argument('--matlab', dest='matlab', action='store_true', default=False)
+    parser.add_argument('--mode', dest='mode', action='store', default='K-FOLD')
+    parser.add_argument('--model', dest='model', action='store', default='python')
+    parser.add_argument('--algo', dest='algo', action='store', default='nb')
+    parser.add_argument('--penalty', dest='penalty', action='store', default='l2')
+    parser.add_argument('--zeropct', dest='zeropct', nargs='?', default=0.3, type=float,
+            help='percentage of zero to include')
+    parser.add_argument('--C', dest='C', nargs='?', default=0.58, type=float,
+            help='penality param C of the regularization error term')
+    parser.add_argument('--k', dest='k', nargs='?', default=10, type=int,
+            help='k for K-Fold')
+    (opts, args) = parser.parse_known_args()
+
+    # runNBRange(**vars(opts))
+    # plotNBRange(**vars(opts))
+    # runFeatureSelect(**vars(opts))
+    # plotFeatureSelect(**vars(opts))
+    # runExcFeatures(**vars(opts))
+    # plotExcFeatures(**vars(opts))
+    # printMetric(metric)
+    # findBestRegularicationError(**vars(opts))
+    plotBestRegularicationError(**vars(opts))
+    # plotModel(**vars(opts))
+    # runAllModels(**vars(opts))
+    
+if __name__ == "__main__":
+    main()

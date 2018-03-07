@@ -1,0 +1,55 @@
+[?1h=
+                                 < M A T L A B (R) >
+                       Copyright 1984-2016 The MathWorks, Inc.
+                        R2016b (9.1.0.441655) 64-bit (maci64)
+                                  September 7, 2016
+
+ 
+To get started, type one of these: helpwin, helpdesk, or demo.
+For product information, visit www.mathworks.com.
+ 
+Reading file experiments/Training_Input/training_input_wst_nb0.05.csv
+experiments/Training_Input/training_input_wst_nb0.05.csv ,m=83, n=680, Test error: 0.0723
+Reading file experiments/Training_Input/training_input_wst_nb0.145.csv
+experiments/Training_Input/training_input_wst_nb0.145.csv ,m=83, n=704, Test error: 0.0602
+Reading file experiments/Training_Input/training_input_wst_nb0.24.csv
+experiments/Training_Input/training_input_wst_nb0.24.csv ,m=83, n=755, Test error: 0.0482
+Reading file experiments/Training_Input/training_input_wst_nb0.335.csv
+experiments/Training_Input/training_input_wst_nb0.335.csv ,m=83, n=806, Test error: 0.0602
+Reading file experiments/Training_Input/training_input_wst_nb0.43.csv
+experiments/Training_Input/training_input_wst_nb0.43.csv ,m=83, n=845, Test error: 0.0723
+Reading file experiments/Training_Input/training_input_wst_nb0.525.csv
+experiments/Training_Input/training_input_wst_nb0.525.csv ,m=83, n=887, Test error: 0.0964
+Reading file experiments/Training_Input/training_input_wst_nb0.62.csv
+experiments/Training_Input/training_input_wst_nb0.62.csv ,m=83, n=923, Test error: 0.0964
+Reading file experiments/Training_Input/training_input_wst_nb0.715.csv
+experiments/Training_Input/training_input_wst_nb0.715.csv ,m=83, n=929, Test error: 0.0723
+Reading file experiments/Training_Input/training_input_wst_nb0.81.csv
+experiments/Training_Input/training_input_wst_nb0.81.csv ,m=83, n=935, Test error: 0.0723
+Reading file experiments/Training_Input/training_input_wst_nb0.905.csv
+experiments/Training_Input/training_input_wst_nb0.905.csv ,m=83, n=935, Test error: 0.0723
+Reading file experiments/Training_Input/training_input_wst_nb1.0.csv
+experiments/Training_Input/training_input_wst_nb1.0.csv ,m=83, n=935, Test error: 0.0723
+Reading file experiments/Training_Input/training_input_wost_nb0.05.csv
+experiments/Training_Input/training_input_wost_nb0.05.csv ,m=83, n=676, Test error: 0.0964
+Reading file experiments/Training_Input/training_input_wost_nb0.145.csv
+experiments/Training_Input/training_input_wost_nb0.145.csv ,m=83, n=700, Test error: 0.0964
+Reading file experiments/Training_Input/training_input_wost_nb0.24.csv
+experiments/Training_Input/training_input_wost_nb0.24.csv ,m=83, n=751, Test error: 0.0843
+Reading file experiments/Training_Input/training_input_wost_nb0.335.csv
+experiments/Training_Input/training_input_wost_nb0.335.csv ,m=83, n=802, Test error: 0.1205
+Reading file experiments/Training_Input/training_input_wost_nb0.43.csv
+experiments/Training_Input/training_input_wost_nb0.43.csv ,m=83, n=841, Test error: 0.1205
+Reading file experiments/Training_Input/training_input_wost_nb0.525.csv
+experiments/Training_Input/training_input_wost_nb0.525.csv ,m=83, n=883, Test error: 0.1084
+Reading file experiments/Training_Input/training_input_wost_nb0.62.csv
+experiments/Training_Input/training_input_wost_nb0.62.csv ,m=83, n=919, Test error: 0.1205
+Reading file experiments/Training_Input/training_input_wost_nb0.715.csv
+experiments/Training_Input/training_input_wost_nb0.715.csv ,m=83, n=925, Test error: 0.1084
+Reading file experiments/Training_Input/training_input_wost_nb0.81.csv
+experiments/Training_Input/training_input_wost_nb0.81.csv ,m=83, n=931, Test error: 0.1205
+Reading file experiments/Training_Input/training_input_wost_nb0.905.csv
+experiments/Training_Input/training_input_wost_nb0.905.csv ,m=83, n=931, Test error: 0.1446
+Reading file experiments/Training_Input/training_input_wost_nb1.0.csv
+experiments/Training_Input/training_input_wost_nb1.0.csv ,m=83, n=931, Test error: 0.1084
+[?1l>

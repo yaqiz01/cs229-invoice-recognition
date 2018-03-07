@@ -1,0 +1,77 @@
+\begin{thebibliography}{10}
+
+\bibitem{ming2003research}
+D.~Ming, J.~Liu, and J.~Tian, ``Research on chinese financial invoice
+  recognition technology,'' {\em Pattern recognition letters}, vol.~24, no.~1,
+  pp.~489--497, 2003.
+
+\bibitem{marinai2008introduction}
+S.~Marinai, ``Introduction to document analysis and recognition,'' in {\em
+  Machine learning in document analysis and recognition}, pp.~1--20, Springer,
+  2008.
+
+\bibitem{zhou2000hough}
+Y.~P. Zhou and C.~L. Tan, ``Hough technique for bar charts detection and
+  recognition in document images,'' in {\em Image Processing, 2000.
+  Proceedings. 2000 International Conference on}, vol.~2, pp.~605--608, IEEE,
+  2000.
+
+\bibitem{sorio2013machine}
+E.~Sorio, ``Machine learning techniques for document processing and web
+  security,'' 2013.
+
+\bibitem{hamza2008incremental}
+H.~Hamza, Y.~Bela{\"\i}d, A.~Bela{\"\i}d, and B.~B. Chaudhuri, ``Incremental
+  classification of invoice documents,'' in {\em Pattern Recognition, 2008.
+  ICPR 2008. 19th International Conference on}, pp.~1--4, IEEE, 2008.
+
+\bibitem{belaid2004morphological}
+Y.~Bela{\"\i}d and A.~Bela{\"\i}d, ``Morphological tagging approach in document
+  analysis of invoices,'' in {\em Pattern Recognition, 2004. ICPR 2004.
+  Proceedings of the 17th International Conference on}, vol.~1, pp.~469--472,
+  IEEE, 2004.
+
+\bibitem{shinyamapdfminer}
+Y.~Shinyama, ``Pdfminer: Python pdf parser and analyzer,'' 2010.
+
+\bibitem{vc1962method}
+H.~P. VC, ``Method and means for recognizing complex patterns,'' Dec.~18 1962.
+\newblock US Patent 3,069,654.
+
+\bibitem{smith2007overview}
+R.~Smith, ``An overview of the tesseract ocr engine,'' 2007.
+
+\bibitem{stemming}
+M.~Chapput, ``Python implementation of porter2 stemming algorithm,'' 2010.
+
+\bibitem{loper205028nltk}
+E.~Loper and S.~Bird, ``Nltk: The natural language toolkit. 2002,'' {\em URL
+  http://arxiv. org/abs/cs/0205028}.
+
+\bibitem{scikit-learn}
+F.~Pedregosa, G.~Varoquaux, A.~Gramfort, V.~Michel, B.~Thirion, O.~Grisel,
+  M.~Blondel, P.~Prettenhofer, R.~Weiss, V.~Dubourg, J.~Vanderplas, A.~Passos,
+  D.~Cournapeau, M.~Brucher, M.~Perrot, and E.~Duchesnay, ``Scikit-learn:
+  Machine learning in {P}ython,'' {\em Journal of Machine Learning Research},
+  vol.~12, pp.~2825--2830, 2011.
+
+\bibitem{fan2008liblinear}
+R.-E. Fan, K.-W. Chang, C.-J. Hsieh, X.-R. Wang, and C.-J. Lin, ``Liblinear: A
+  library for large linear classification,'' {\em Journal of machine learning
+  research}, vol.~9, no.~Aug, pp.~1871--1874, 2008.
+
+\bibitem{chang2011libsvm}
+C.-C. Chang and C.-J. Lin, ``Libsvm: a library for support vector machines,''
+  {\em ACM Transactions on Intelligent Systems and Technology (TIST)}, vol.~2,
+  no.~3, p.~27, 2011.
+
+\bibitem{powers2011evaluation}
+D.~M. Powers, ``Evaluation: from precision, recall and f-measure to roc,
+  informedness, markedness and correlation,'' 2011.
+
+\bibitem{chen2004support}
+D.-R. Chen, Q.~Wu, Y.~Ying, and D.-X. Zhou, ``Support vector machine soft
+  margin classifiers: error analysis,'' {\em Journal of Machine Learning
+  Research}, vol.~5, no.~Sep, pp.~1143--1175, 2004.
+
+\end{thebibliography}

@@ -1,0 +1,54 @@
+\section{Methods}
+Using the scikit-learn library\cite{scikit-learn}, three learning models were trained and used to make predictions: Multinomial Naive Bayes, Logistic Regression, and Support Vector Machines (SVM). In all three models, the class labels $y\in[0, 7]$, where 0 is the negative class, and 1-7 corresponds to \textit{invoice number}, \textit{invoice date}, \textit{total amount}, \textit{PO \#}, \textit{payment terms}, \textit{due date}, and \textit{tax}, respectively.
+\subsection{Multinomial Naive Bayes}
+In the Multinomial Naive Bayes model, we make the assumption that the features $x_i$ are conditionally independent given the class labels y. We used this model with Laplace smoothing to fit parameters $\phi_{y=k}=p(y=k)$, and $\phi_{j, y=k} = p(x_j=1\vert y=k)$, where $k\in[0,7]$, in order to maximize the joint likelihood of the data, given by
+\begin{align*}
+\mathcal{L}(\phi_{y=k}, \phi_{j, y=k}) = \prod_{i=1}^mp(x^{(i)}, y^{(i)}).
+\end{align*}
+The maximum likelihood estimation of these parameters are given as follows:
+\begin{align*}
+\phi_{y=k} &= \frac{\sum_{i=1}^m{\bf 1}(y^{(i)}=k)}{m}\\
+\phi_{j, y=k} &= \frac{\sum_{i=1}^m{\bf 1}(x_j^{(i)}=1, y^{(i)}=k)+1}{m+K}.
+\end{align*}
+After fitting these parameters, to make a prediction on a new example with feature $x$, we calculate the posterior probability for each class $k$ using
+\begin{align*}
+p(y=k\vert x) &= \frac{p(x\vert y=k)p(y=k)}{p(x)} \\
+&= \frac{(\prod_{i=1}^np(x_i\vert y=k))p(y=k)}{\sum_{l=1}^K(\prod_{i=1}^np(x_i\vert y=l))p(y=l)}
+\end{align*}
+and substituting the probabilities with the corresponding parameters. The class with the highest posterior probability will then be our prediction.
+
+\subsection{Logistic Regression}
+In the Logistic Regression model, we first transform our multiclass classification problem into a binary classification problem using the one-vs-rest approach, i.e.\ when calculating the probability for class $k$, all other classes have the same label. In binary Logistic Regression, we use the following hypothesis to make predictions:
+\begin{align*}
+h_{\theta}(x) = \frac{1}{1+\exp(-\theta^Tx)}.
+\end{align*}
+This hypothesis indicates that a logistic/sigmoid curve, which smoothly increases from 0 to 1, is fit to the data such that we predict 1 when $h_\theta(x) > 0.5$ and 0 otherwise. Then, we choose the logistic loss
+\begin{align*}
+\mathrm{L}(z, y) &= \log(1+\exp(-yz))\\
+&= \log(1+\exp(-y\theta^Tx)),
+\end{align*}
+where $z=\theta^Tx$. The loss is minimized when we have a large margin $yz$, and maximized otherwise. $\ell_2$-regularization is used to combat overfitting. We used a slight variation of empirical regularized risk function than the one from class note to minimize:
+\begin{align}\label{eq:logreg}
+J_C(\theta) &= \frac{C}{m}\sum_{i=1}^m\mathrm{L}(\theta^Tx^{(i)}, y^{(i)}) + \frac{1}{2}\lVert\theta\rVert_2^2\\
+&= \frac{C}{m}\sum_{i=1}^m\log(1+\exp(-y^{(i)}\theta^Tx^{(i)})) + \frac{1}{2}\lVert\theta\rVert_2^2.
+\end{align}
+The scikit-learn implementation fits the parameter $\theta$ by solving the dual optimization problem of L2-Regularized Logistic Regression using coordinate descent\cite{fan2008liblinear}.
+
+\subsection{SVM}
+As in Logistic Regression, we first use the one-vs-rest approach to transform our problem into a binary classification problem with labels $\{-1, 1\}$ for all classes. Then, we choose the margin-based loss function
+\begin{align*}
+\mathrm{L}(z,y) = [1-yz]_+ = \max\{0, 1-yz\},
+\end{align*}
+where $z=\theta^Tx$. This loss function is zero as long as the margin $yz$ is greater than 1 (the model makes the correct prediction and is reasonably confident). In order to fit the model, we try to minimize the empirical $\ell_2$-regularized risk, given by
+\begin{align}
+J_C(\theta) &= \frac{C}{m}\sum_{i=1}^m\mathrm{L}(\theta^Tx^{(i)},y^{(i)}) + \frac{1}{2}\lVert\theta\rVert_2^2\\
+&= \frac{C}{m}\sum_{i=1}^m[1-y^{(i)}\theta^Tx^{(i)}]_+ + \frac{1}{2}\lVert\theta\rVert_2^2
+\end{align}
+
+The scikit-learn LinearSVC's implementation of SVM uses a linear kernel $K$. Based on the represented theorem, we can implicitly represent $z=\theta^Tx$ as $\sum_{i=1}^m\alpha_ix^{(i)T}x^{(i)}$. This allows us to use the kernel trick, and rewrite the empirical regularized risk in terms of $\alpha$:
+
+\begin{align}\label{eq:SVM}
+J_C(\alpha) = \frac{C}{m}\sum_{i=1}^m[1-y^{(i)}K^{(i)T}\alpha]_+ + \frac{1}{2}\alpha^TK\alpha,
+\end{align}
+
+where $K^{(i)}$ is the $i^{\mathrm{th}}$ column of the Gram matrix of kernel $K$. The LinearSVC implementation fits the parameter $\alpha$ of the model by solving the dual optimization problem of the $C$-Support Vector Classification formulation of SVM\cite{chang2011libsvm}. After fitting the parameters, the model then makes predictions based on the value of $z=\theta^Tx$.

@@ -1,0 +1,16 @@
+[?1h=
+                                               < M A T L A B (R) >
+                                     Copyright 1984-2016 The MathWorks, Inc.
+                                      R2016b (9.1.0.441655) 64-bit (maci64)
+                                                September 7, 2016
+
+ 
+To get started, type one of these: helpwin, helpdesk, or demo.
+For product information, visit www.mathworks.com.
+ 
+Reading file experiments/Training_Input/training_input_incft_hAlign.csvexperiments/Training_Input/training_input_incft_hAlign.csv Test error: 0.3976
+Reading file experiments/Training_Input/training_input_incft_nearby.csvexperiments/Training_Input/training_input_incft_nearby.csv Test error: 0.1807
+Reading file experiments/Training_Input/training_input_incft_pos.csvexperiments/Training_Input/training_input_incft_pos.csv Test error: 0.3614
+Reading file experiments/Training_Input/training_input_incft_selfType.csvexperiments/Training_Input/training_input_incft_selfType.csv Test error: 0.1205
+Reading file experiments/Training_Input/training_input_incft_vAlign.csvexperiments/Training_Input/training_input_incft_vAlign.csv Test error: 0.4699
+[?1l>

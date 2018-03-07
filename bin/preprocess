@@ -1,0 +1,128 @@
+#!/usr/bin/python2.7
+
+from os import listdir
+from os.path import isfile, join, splitext
+import os
+import csv
+from shutil import copyfile
+import xml.etree.ElementTree as ET
+import argparse
+import miscellaneous as misc
+
+def main():
+    usage = "Usage: preprocess [options --no-ocr --no-pdfminer --no-pngconv]"
+    parser = argparse.ArgumentParser(description='Preprocess data for invoice recognition')
+    parser.add_argument('--no-pngconv', dest='pngconv', action='store_false', default=False,
+            help='disable convert pdf to png')
+    parser.add_argument('--no-ocr', dest='ocr', action='store_false',default=True, help='Disable OCR')
+    parser.add_argument('--no-pdfminer', dest='pdfminer', action='store_false', default=True,
+            help='Disable pdfminer')
+    (opts, args) = parser.parse_known_args()
+    # if (opts.ocr):
+    if (opts.pdfminer):
+        if not os.environ.has_key("PDFMINER_HOME"):
+            print('Need to set pdfminer install path in system environment PDFMINER_HOME')
+            exit(-1)
+        pdfminer = '{0}/tools/pdf2txt.py'.format(os.environ['PDFMINER_HOME'])
+    if (opts.pngconv):
+        from wand.image import Image
+        from wand.color import Color
+
+    data_path = 'data/'
+    training_img_path = '{0}Training_Image_pdf/'.format(data_path)
+    training_img_png_path = '{0}Training_Image_png/'.format(data_path)
+    training_img_ocr_path = '{0}Training_Image_ocr/'.format(data_path)
+    training_img_xml_path = '{0}Training_Image_xml/'.format(data_path)
+    
+    trImgs = [f for f in listdir(training_img_path) if isfile(join(training_img_path, f))]
+    trPngs = [f for f in listdir(training_img_png_path) if isfile(join(training_img_png_path, f))]
+    trOcrs = [f for f in listdir(training_img_ocr_path) if isfile(join(training_img_ocr_path, f))]
+    trXmls = [f for f in listdir(training_img_xml_path) if isfile(join(training_img_xml_path, f))]
+
+    # Loading Training_Data.csv
+    print('Loading Training_Data.csv ...')
+    metadata = {}
+    fileNames = []
+    input_file = csv.DictReader(open('{0}Training_Data.csv'.format(data_path), mode='r'))
+    for row in input_file:
+        english = row['English?'] in ('yes', 'Yes')
+        standard = row['Standard?'] in ('yes', 'Yes')
+        # print('{0} english={1} standard={2}'.format(row['ID'], english, standard))
+        if (english and standard):
+            metadata[row['ID']] = row
+            fileNames.append(row['ID'])
+
+    print('Loading Corrections.csv ...')
+    corrections = []
+    input_file = csv.DictReader(open('{0}Corrections.csv'.format(data_path), mode='r'))
+
+    print('Loading whitelist.txt ...')
+    whitelist = open('{0}whitelist.txt'.format(data_path), 'r').readline().replace('\n', '')
+
+    for row in input_file:
+        corrections.append((row['Incorrect'], row['Correct']))
+    
+    for fileName in fileNames:
+        # Convert pdf to png
+        selectable = metadata[fileName]['Selectable PDF?'] in ('yes', 'Yes')
+        if (opts.pngconv and '{0}_0.png'.format(fileName) not in trPngs):
+            if (not selectable):
+                all_pages = Image(blob='{0}{1}.pdf'.format(training_img_path, fileName))
+                for i, page in enumerate(all_pages.sequence):
+                    with Image(single_image) as img:
+                        img.format = 'png'
+                        img.background_color = Color('white') # Set white background.
+                        img.alpha_channel = 'remove'  
+                        img.save(filename='{0}{1}_{2}.png'.format(training_img_path, fileName, i))
+        # OCR
+        if (opts.ocr and '{0}.pdf'.format(fileName) not in trOcrs):
+            if (selectable):
+                src = '{0}{1}.pdf'.format(training_img_path, fileName)
+                dst = '{0}{1}.pdf'.format(training_img_ocr_path, fileName)
+                print('Copying from {0} to {1}'.format(src, dst))
+                copyfile(src,dst)
+            else: 
+                command = '{0} {1}{3}.png {2}{3} -c tessedit_char_whitelist="{4}" -l eng pdf '.format(
+                        'tesseract', training_img_png_path, training_img_ocr_path, fileName,
+                        whitelist)
+                print('Generating ocr for {0}.png. {1}'.format(fileName, command))
+                os.system(command)
+        # Pdfminer
+        if (opts.pdfminer and '{0}.xml'.format(fileName) not in trXmls):
+            command = '{0} -t xml -o {2}{3}.xml {1}{3}.pdf'.format(pdfminer, training_img_ocr_path, 
+                training_img_xml_path, fileName)
+            print('Generating xml for {0}.pdf {1}'.format(fileName, command))
+            os.system(command)
+        # Add grouped words as a field in xml
+        xmlFile = '{0}{1}.xml'.format(training_img_xml_path, fileName)
+        tree = ET.parse(xmlFile)
+        pages = tree.getroot()
+        if 'updated' in pages.attrib and pages.get('updated') == 'True':
+            continue
+        else:
+            pages.set('updated', 'True')
+        for page in pages:
+            global textbox
+            for textbox in page:
+                if (textbox.tag!='textbox'):
+                    continue
+                words = ''
+                for textline in textbox: 
+                    for text in textline:
+                        words += text.text
+                words = words.replace('\n', ' ')
+                words = words.replace('"', '')
+                words = words.replace(u'\u201c', '')
+                words = words.replace(u'\u201d', '')
+                words = words.replace(u'\u2014', '-')
+                words = words.replace(u'\ufb02', 'f')
+                for correction in corrections:
+                    words = words.replace(correction[0], correction[1])
+                (processed_words, tpe) = misc.process_words(words)
+                textbox.set('text', words)
+                textbox.set('processed_text', processed_words)             
+                textbox.set('type', tpe)
+        tree.write(xmlFile, encoding="UTF-8")
+
+if __name__ == "__main__":
+    main()

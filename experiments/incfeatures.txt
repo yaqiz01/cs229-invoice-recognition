@@ -1,0 +1,31 @@
+[?1h=
+                                 < M A T L A B (R) >
+                       Copyright 1984-2016 The MathWorks, Inc.
+                        R2016b (9.1.0.441655) 64-bit (maci64)
+                                  September 7, 2016
+
+ 
+To get started, type one of these: helpwin, helpdesk, or demo.
+For product information, visit www.mathworks.com.
+ 
+Reading file experiments/Training_Input/training_input_incft_hAlign.csv
+experiments/Training_Input/training_input_incft_hAlign.csv ,m=83, n=249, Test error: 0.2651
+Reading file experiments/Training_Input/training_input_incft_nearby.csv
+experiments/Training_Input/training_input_incft_nearby.csv ,m=83, n=249, Test error: 0.1687
+Reading file experiments/Training_Input/training_input_incft_pos.csv
+experiments/Training_Input/training_input_incft_pos.csv ,m=83, n=4, Test error: 0.3614
+Reading file experiments/Training_Input/training_input_incft_selfType.csv
+experiments/Training_Input/training_input_incft_selfType.csv ,m=83, n=4, Test error: 0.1205
+Reading file experiments/Training_Input/training_input_incft_vAlign.csv
+experiments/Training_Input/training_input_incft_vAlign.csv ,m=83, n=249, Test error: 0.3133
+Reading file experiments/Training_Input/training_input_excft_hAlign.csv
+experiments/Training_Input/training_input_excft_hAlign.csv ,m=83, n=506, Test error: 0.0723
+Reading file experiments/Training_Input/training_input_excft_nearby.csv
+experiments/Training_Input/training_input_excft_nearby.csv ,m=83, n=506, Test error: 0.0723
+Reading file experiments/Training_Input/training_input_excft_pos.csv
+experiments/Training_Input/training_input_excft_pos.csv ,m=83, n=751, Test error: 0.0602
+Reading file experiments/Training_Input/training_input_excft_selfType.csv
+experiments/Training_Input/training_input_excft_selfType.csv ,m=83, n=751, Test error: 0.0843
+Reading file experiments/Training_Input/training_input_excft_vAlign.csv
+experiments/Training_Input/training_input_excft_vAlign.csv ,m=83, n=506, Test error: 0.0843
+[?1l>
